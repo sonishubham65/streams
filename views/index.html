@@ -14,7 +14,6 @@
         oReq.open("POST", "/", true);
         oReq.setRequestHeader("Content-type", "application/json");
         oReq.send(JSON.stringify({ start: start, end: end }))
-
         oReq.onload = function (data) {
             console.log(data);
             cb(data)
