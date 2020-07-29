@@ -15,8 +15,7 @@
         oReq.setRequestHeader("Content-type", "application/json");
         oReq.send(JSON.stringify({ start: start, end: end }))
         oReq.onload = function (data) {
-            console.log(data);
-            cb(data)
+            cb(data.srcElement.responseText)
         };
     }
     var mimeCodec = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
@@ -37,11 +36,12 @@
         fetchAB(0, 100000, function (buf) {
             sourceBuffer.addEventListener('updateend', function (_) {
                 mediaSource.endOfStream();
-                //video.play();
-                //console.log(mediaSource.readyState); // ended
+                video.play();
+                console.log(mediaSource.readyState); // ended
             });
-            console.log(buf)
-            sourceBuffer.appendBuffer(new ArrayBuffer(buf.data));
+            let arrayBuffer = new Uint8Array(buf);
+            console.log(arrayBuffer, buf)
+            sourceBuffer.appendBuffer(arrayBuffer);
         });
     };
 </script>
