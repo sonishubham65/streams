@@ -9,16 +9,37 @@
 </body>
 <script>
     var video = document.querySelector('video');
-    function fetchAB(start, end, cb) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "/", true);
-        xhr.setRequestHeader("Content-type", "application/json");
-        xhr.send(JSON.stringify({ start: start, end: end }))
-        xhr.onload = function (data) {
-            cb(JSON.parse(xhr.response))
-        };
+    async function fetchAB(start, end, cb) {
+        const response = await fetch("/", {
+            method: 'POST',
+            mode: 'cors',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            redirect: 'follow',
+            referrerPolicy: 'no-referrer',
+            body: JSON.stringify({ start: start, end: end }) // body data type must match "Content-Type" header
+        });
+        let buffer = await response.arrayBuffer();
+        console.log(response, buffer);
+        //cb((response))
+        let arrayBuffer = new ArrayBuffer(buffer);
+        let media = document.createElement("video");
+        let blob = new Blob([buffer]);
+        console.log(blob)
+        let blobURL = URL.createObjectURL(blob);
+        console.log(blobURL)
+        media.onloadedmetadata = async e => {
+            cb({
+                mediaDuration: media.duration,
+                mediaBuffer: arrayBuffer
+            })
+        }
+        media.src = blobURL;
     }
-    var mimeCodec = 'video/mp4; codecs="avc1.4d400c,mp4a.40.2,mp4a.40.2"';
+    var mimeCodec = 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"';
 
     if ('MediaSource' in window && MediaSource.isTypeSupported(mimeCodec)) {
         var mediaSource = new MediaSource;
@@ -34,17 +55,17 @@
         //console.log(this.readyState); // open
         var mediaSource = this;
         var sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
-        fetchAB(0, 1000000, function (payload) {
+        fetchAB(0, 100000, function (payload) {
 
             sourceBuffer.addEventListener('updateend', function (_) {
                 console.log('updateend')
+                sourceBuffer.onupdateend = null;
+                sourceBuffer.timestampOffset += payload.mediaDuration;
                 mediaSource.endOfStream();
                 //video.play();
-                console.log(mediaSource.readyState); // ended
+                console.log(mediaSource); // ended
             });
-            let data = payload.data;
-            let arrayBuffer = new Uint8Array(data.data)
-            sourceBuffer.appendBuffer(arrayBuffer);
+            sourceBuffer.appendBuffer(payload.mediaBuffer);
             console.log(sourceBuffer)
         });
     };
